@@ -18,6 +18,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <stdio.h>
 
 #include <yajl/yajl_tree.h>
@@ -47,6 +49,99 @@ void webhdfs_conf_free (webhdfs_conf_t *conf) {
         free(conf->token);
 
     free(conf);
+}
+
+static char *__load_file (const char *filename) {
+    char *pblob;
+    char *blob;
+    off_t size;
+    ssize_t rd;
+    int fd;
+
+    if ((fd = open(filename, O_RDONLY)) < 0) {
+        perror("open()");
+        return(NULL);
+    }
+
+    if (!(size = lseek(fd, 0U, SEEK_END))) {
+        perror("lseek()");
+        return(NULL);
+    }
+
+    if ((blob = (char *) malloc(size + 1)) == NULL) {
+        perror("malloc()");
+        close(fd);
+        return(NULL);
+    }
+
+    pblob = blob;
+    blob[size] = '\0';
+    lseek(fd, 0U, SEEK_SET);
+    while (size > 0) {
+        if ((rd = read(fd, pblob, size)) <= 0) {
+            free(blob);
+            close(fd);
+            return(NULL);
+        }
+        pblob += rd;
+        size -= rd;
+    }
+
+    close(fd);
+    return(blob);
+}
+
+webhdfs_conf_t *webhdfs_conf_load (const char *filename) {
+    const char *jsonUseSsl[] = {"use-ssl", NULL};
+    const char *jsonToken[] = {"token", NULL};
+    const char *jsonDoAs[] = {"doas", NULL};
+    const char *jsonUser[] = {"user", NULL};
+    const char *jsonHost[] = {"host", NULL};
+    const char *jsonPort[] = {"port", NULL};
+    webhdfs_conf_t *conf;
+    char buffer[1024];
+    yajl_val node, v;
+    void *cbuf;
+
+    /* Load conf file */
+    if ((cbuf = __load_file(filename)) == NULL)
+        return(NULL);
+
+    /* Parse json */
+    if ((node = yajl_tree_parse(cbuf, buffer, sizeof(buffer))) == NULL) {
+        fprintf(stderr, "conf-parse: %s\n", buffer);
+        free(cbuf);
+        return(NULL);
+    }
+
+    /* Unload conf file (we've json tree) */
+    free(cbuf);
+
+    if ((conf = webhdfs_conf_alloc()) == NULL) {
+        yajl_tree_free(node);
+        return(NULL);
+    }
+
+    if ((v = yajl_tree_get(node, jsonToken, yajl_t_string)) != NULL)
+        conf->token = strdup(YAJL_GET_STRING(v));
+
+    if ((v = yajl_tree_get(node, jsonHost, yajl_t_string)) != NULL)
+        conf->host = strdup(YAJL_GET_STRING(v));
+
+    if ((v = yajl_tree_get(node, jsonDoAs, yajl_t_string)) != NULL)
+        conf->doas = strdup(YAJL_GET_STRING(v));
+
+    if ((v = yajl_tree_get(node, jsonUser, yajl_t_string)) != NULL)
+        conf->user = strdup(YAJL_GET_STRING(v));
+
+    if ((v = yajl_tree_get(node, jsonUseSsl, yajl_t_number)) != NULL)
+        conf->use_ssl = YAJL_IS_TRUE(v);
+
+    if ((v = yajl_tree_get(node, jsonPort, yajl_t_number)) != NULL)
+        conf->port = YAJL_GET_INTEGER(v);
+
+    yajl_tree_free(node);
+    return(conf);
 }
 
 int webhdfs_conf_set_server (webhdfs_conf_t *conf,

@@ -17,6 +17,7 @@ int main (int argc, char **argv) {
 
     /* Disconnect from WebHDFS */
     webhdfs_disconnect(fs);
+    webhdfs_conf_free(conf);
 
     return(0);
 }

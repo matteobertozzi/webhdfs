@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <yajl/yajl_tree.h>
 #include <curl/curl.h>
 
 #include "webhdfs_p.h"
@@ -126,8 +127,23 @@ int webhdfs_req_exec (webhdfs_req_t *req, int type) {
     if ((err = curl_easy_perform(curl)))
         fprintf(stderr, "%s\n", curl_easy_strerror(err));
 
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &(req->rcode));
     curl_easy_cleanup(curl);
 
     return(err != 0);
 }
+
+yajl_val webhdfs_req_json_response (webhdfs_req_t *req) {
+    char err[1024];
+    yajl_val node;
+
+    if (req->buffer.size == 0)
+        return(NULL);
+
+    if ((node = yajl_tree_parse(req->buffer.blob, err, sizeof(err))) == NULL)
+        fprintf(stderr, "response-parse: %s\n", err);
+
+    return(node);
+}
+
 

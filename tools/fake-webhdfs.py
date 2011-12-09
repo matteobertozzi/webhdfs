@@ -19,12 +19,13 @@
 import BaseHTTPServer
 
 class WebHDFS(BaseHTTPServer.BaseHTTPRequestHandler):
-    GET_OPS = ('OPEN', 'GETFILESTATUS', 'LISTSTATUS', 'GETCONTENTSUMMARY',
-               'GETFILECHECKSUM', 'GETHOMEDIRECTORY', 'GETDELEGATIONTOKEN')
+    GET_OPS = ('OPEN', 'OPEN_DN', 'GETFILESTATUS', 'LISTSTATUS',
+               'GETCONTENTSUMMARY', 'GETFILECHECKSUM', 'GETHOMEDIRECTORY',
+               'GETDELEGATIONTOKEN')
     PUT_OPS = ('CREATE', 'CREATE_DN', 'MKDIRS', 'RENAME', 'SETREPLICATION',
                'SETOWNER', 'SETPERMISSION', 'SETTIMES', 'RENEWDELEGATIONTOKEN',
                'CANCELDELEGATIONTOKEN')
-    POST_OPS = ('APPEND')
+    POST_OPS = ('APPEND', 'APPEND_DN')
     DELETE_OPS = ('DELETE')
 
     def do_GET(self):
@@ -40,20 +41,155 @@ class WebHDFS(BaseHTTPServer.BaseHTTPRequestHandler):
         return self._dispatch(self.DELETE_OPS)
 
     def op_CREATE(self, path, query):
-        query['op'] = 'CREATE_DN'
-        rest = '%s?%s' % (path, '&'.join('%s=%s' % x for x in query.items()))
-        self.send_response(307)
-        self.send_header("Location", 'http://localhost:50007/%s' % rest)
-        self.send_header("Content-Length", 0)
-        self.end_headers()
+        self.send_redirect(path, query, 'CREATE_DN')
 
     def op_CREATE_DN(self, path, query):
-        self.send_default_head(200)
-        self.wfile.write('{CREATE DN %s}' % self.rfile.read(12))
+        self.send_empty_head(201)
+
+    def op_APPEND(self, path, query):
+        self.send_redirect(path, query, 'APPEND_DN')
+
+    def op_APPEND_DN(self, path, query):
+        self.send_empty_head(200)
+
+    def op_OPEN(self, path, query):
+        self.send_redirect(path, query, 'OPEN_DN')
+
+    def op_OPEN_DN(self, path, query):
+        self.send_response(200)
+        self.send_header("Content-Length", 17)
+        self.end_headers()
+        self.wfile.write("Yep data is here!")
 
     def op_MKDIRS(self, path, query):
         self.send_default_head(200)
         self.wfile.write('{"boolean": true}')
+
+    def op_RENAME(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write('{"boolean": true}')
+
+    def op_DELETE(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write('{"boolean": true}')
+
+    def op_GETFILESTATUS(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write("""
+{
+    "FileStatus": {
+        "accessTime"      : 1322596581499,
+        "blockSize"       : 67108864,
+        "group"           : "supergroup",
+        "length"          : 22,
+        "modificationTime": 1322596581499,
+        "owner"           : "szetszwo",
+        "pathSuffix"      : "",
+        "permission"      : "644",
+        "replication"     : 3,
+        "type"            : "FILE"
+    }
+}
+""")
+
+    def op_LISTSTATUS(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write("""
+{
+    "FileStatuses": {
+        "FileStatus": [
+            {
+                "accessTime": 1322596581499,
+                "blockSize": 67108864,
+                "group": "supergroup",
+                "length": 22,
+                "modificationTime": 1322596581499,
+                "owner": "szetszwo",
+                "pathSuffix": "file",
+                "permission": "644",
+                "replication": 3,
+                "type": "FILE"
+            },
+            {
+                "accessTime": 1322596581499,
+                "blockSize": 0,
+                "group": "supergroup",
+                "length": 0,
+                "modificationTime": 1322596581499,
+                "owner": "szetszwo",
+                "pathSuffix": "dir",
+                "permission": "644",
+                "replication": 1,
+                "type": "DIRECTORY"
+            }
+        ]
+    }
+}
+""")
+
+    def op_GETCONTENTSUMMARY(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write("""
+{
+    "ContentSummary": {
+        "directoryCount": 2,
+        "fileCount"     : 1,
+        "length"        : 24930,
+        "quota"         : -1,
+        "spaceConsumed" : 24930,
+        "spaceQuota"    : -1
+    }
+}
+""");
+
+    def op_GETFILECHECKSUM(self, path, query):
+        self.send_redirect(path, query, 'GETFILECHECKSUM_DN')
+
+    def op_GETFILECHECKSUM_DN(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write("""
+{
+    "FileChecksum": {
+        "algorithm": "MD5-of-1MD5-of-512CRC32",
+        "bytes"    : "eadb10de24aa315748930df6e185c0d ...",
+        "length"   : 28
+    }
+}
+        """);
+
+    def op_GETHOMEDIRECTORY(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write('{"Path": "/user/th30z"}')
+
+    def op_SETPERMISSION(self, path, query):
+        self.send_empty_head()
+
+    def op_SETOWNER(self, path, query):
+        self.send_empty_head()
+
+    def op_SETREPLICATION(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write('{"boolean": true}')
+
+    def op_SETTIMES(self, path, query):
+        self.send_empty_head()
+
+    def op_GETDELEGATIONTOKEN(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write("""
+{
+    "Token": {
+        "urlString": "JQAIaG9y..."
+    }
+}
+""");
+
+    def op_RENEWDELEGATIONTOKEN(self, path, query):
+        self.send_default_head(200)
+        self.wfile.write('{"long": 1320962673997}')
+
+    def op_CANCELDELEGATIONTOKEN(self, path, query):
+        self.send_empty_head()
 
     def _dispatch(self, allowed_ops):
         path, query = self._getQuery()
@@ -95,6 +231,19 @@ class WebHDFS(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-type", 'application/json')
         #self.send_header("Transfer-Encoding", 'chunked')
+        self.end_headers()
+
+    def send_empty_head(self, code):
+        self.send_response(code)
+        self.send_header("Content-Length", 0)
+        self.end_headers()
+
+    def send_redirect(self, path, query, new_op):
+        query['op'] = new_op
+        rest = '%s?%s' % (path, '&'.join('%s=%s' % x for x in query.items()))
+        self.send_response(307)
+        self.send_header("Location", 'http://localhost:50007/%s' % rest)
+        self.send_header("Content-Length", 0)
         self.end_headers()
 
 if __name__ == '__main__':

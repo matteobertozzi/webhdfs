@@ -154,9 +154,9 @@ int buffer_append_vformat (buffer_t *buffer, const char *frmt, va_list ap) {
                 }
 
                 if (c != 'l') {
-                    n = __i64tostr(va_arg(ap, int32_t), nbuf, base);
+                    n = __i64tostr(va_arg(ap, int), nbuf, base);
                 } else {
-                    n = __i64tostr(va_arg(ap, int64_t), nbuf, base);
+                    n = __i64tostr(va_arg(ap, size_t), nbuf, base);
                     frmt++;
                 }
 

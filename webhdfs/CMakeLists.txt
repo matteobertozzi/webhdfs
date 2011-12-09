@@ -1,6 +1,6 @@
 set(PUBLIC_HEADERS webhdfs.h)
 set(PRIVATE_HEADERS webhdfs_p.h buffer.h)
-set(SOURCES webhdfs.c buffer.c request.c config.c)
+set(SOURCES webhdfs.c file.c dir.c buffer.c request.c response.c config.c)
 
 find_library(CURL curl)
 find_library(YAJL yajl)

@@ -19,6 +19,7 @@
 #ifndef _WEBHDFS_H_
 #define _WEBHDFS_H_
 
+#include <stdlib.h>
 #include <stdarg.h>
 
 #ifdef __cplusplus
@@ -26,11 +27,26 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct webhdfs webhdfs_t;
+typedef struct webhdfs_dir webhdfs_dir_t;
 typedef struct webhdfs_conf webhdfs_conf_t;
 typedef struct webhdfs_file webhdfs_file_t;
 
+typedef struct webhdfs_fstat {
+    const char *group;
+    const char *owner;
+    const char *path;
+    const char *type;
+    size_t length;
+    size_t block;
+    size_t atime;
+    size_t mtime;
+    int replication;
+    int permission;
+} webhdfs_fstat_t;
+
 /* WebHDFS Configuration - host:port, user, token, ... */
 webhdfs_conf_t *webhdfs_conf_alloc      (void);
+webhdfs_conf_t *webhdfs_conf_load       (const char *filename);
 void            webhdfs_conf_free       (webhdfs_conf_t *conf);
 
 int             webhdfs_conf_set_server (webhdfs_conf_t *conf,
@@ -46,9 +62,58 @@ int             webhdfs_conf_set_token  (webhdfs_conf_t *conf,
 webhdfs_t *     webhdfs_connect         (const webhdfs_conf_t *conf);
 void            webhdfs_disconnect      (webhdfs_t *fs);
 
+int             webhdfs_file_create     (webhdfs_t *fs,
+                                         const char *path,
+                                         int override);
+webhdfs_file_t *webhdfs_file_open       (webhdfs_t *fs,
+                                         const char *path);
+int             webhdfs_file_append     (webhdfs_file_t *fs,
+                                         const void *buffer,
+                                         size_t nbyte);
+size_t          webhdfs_file_read       (webhdfs_file_t *fs,
+                                         void *buffer,
+                                         size_t nbyte,
+                                         size_t offset);
+void            webhdfs_file_close      (webhdfs_file_t *file);
+
+webhdfs_dir_t * webhdfs_dir_open        (webhdfs_t *fs,
+                                         const char *path);
+const webhdfs_fstat_t *webhdfs_dir_read        (webhdfs_dir_t *dir);
+void            webhdfs_dir_close       (webhdfs_dir_t *dir);
+
+
 int             webhdfs_mkdir           (webhdfs_t *fs,
                                          const char *path,
                                          int permission);
+int             webhdfs_rmdir           (webhdfs_t *fs,
+                                         const char *path,
+                                         int recursive);
+
+int             webhdfs_unlink          (webhdfs_t *fs,
+                                         const char *path);
+int             webhdfs_rename          (webhdfs_t *fs,
+                                         const char *oldname,
+                                         const char *newname);
+
+int             webhdfs_chown           (webhdfs_t *fs,
+                                         const char *path,
+                                         const char *user,
+                                         const char *group);
+int             webhdfs_chmod           (webhdfs_t *fs,
+                                         const char *path,
+                                         int permission);
+
+int             webhdfs_set_replication (webhdfs_t *fs,
+                                         const char *path,
+                                         int replication);
+
+int             webhdfs_set_times       (webhdfs_t *fs,
+                                         const char *path,
+                                         int mtime,
+                                         int atime);
+
+char *          webhdfs_home_dir        (webhdfs_t *fs);
+
 int             webhdfs_bad             (webhdfs_t *fs);
 
 #ifdef __cplusplus

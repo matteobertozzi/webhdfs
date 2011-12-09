@@ -19,7 +19,9 @@
 #ifndef _WEBHDFS_PRIVATE_H_
 #define _WEBHDFS_PRIVATE_H_
 
-#include <stdint.h>
+#include <stdarg.h>
+
+#include <yajl/yajl_tree.h>
 
 #include "webhdfs.h"
 #include "buffer.h"
@@ -40,7 +42,8 @@ struct webhdfs_conf {
 };
 
 struct webhdfs_req {
-    buffer_t buffer;
+    buffer_t buffer;        /* Internal buffer used for url & data */
+    int      rcode;         /* Response code */
 };
 
 enum webhdfs_req_type {
@@ -50,19 +53,41 @@ enum webhdfs_req_type {
     WEBHDFS_REQ_DELETE,
 };
 
-struct webhdfs_file {
+struct webhdfs_dir {
+    webhdfs_fstat_t stat;
+    yajl_val statuses;
+    yajl_val root;
+    size_t   current;
 };
 
-int     webhdfs_req_open       (webhdfs_req_t *req,
-                                webhdfs_t *fs,
-                                const char *path);
-void    webhdfs_req_free       (webhdfs_req_t *req);
+struct webhdfs_file {
+    webhdfs_t *fs;
+    char *path;
+};
 
-int     webhdfs_req_set_args   (webhdfs_req_t *req,
-                                const char *frmt,
-                                ...);
-int     webhdfs_req_exec       (webhdfs_req_t *req,
-                                int type);
+int      webhdfs_req_open                 (webhdfs_req_t *req,
+                                           webhdfs_t *fs,
+                                           const char *path);
+void     webhdfs_req_free                 (webhdfs_req_t *req);
+
+int      webhdfs_req_set_args             (webhdfs_req_t *req,
+                                           const char *frmt,
+                                           ...);
+int      webhdfs_req_exec                 (webhdfs_req_t *req,
+                                           int type);
+
+yajl_val webhdfs_req_json_response        (webhdfs_req_t *req);
+
+yajl_val webhdfs_response_exception       (yajl_val node);
+yajl_val webhdfs_response_boolean         (yajl_val node);
+yajl_val webhdfs_response_content_summary (yajl_val node);
+yajl_val webhdfs_response_file_checksum   (yajl_val node);
+yajl_val webhdfs_response_file_status     (yajl_val node);
+yajl_val webhdfs_response_file_statuses   (yajl_val node);
+yajl_val webhdfs_response_token           (yajl_val node);
+yajl_val webhdfs_response_path            (yajl_val node);
+yajl_val webhdfs_response_long            (yajl_val node);
+
 
 #endif /* !_WEBHDFS_PRIVATE_H_ */
 
