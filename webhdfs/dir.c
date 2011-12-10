@@ -89,8 +89,8 @@ const webhdfs_fstat_t *webhdfs_dir_read (webhdfs_dir_t *dir) {
     if ((v = yajl_tree_get(node, atime, yajl_t_number)))
         dir->stat.atime = YAJL_GET_INTEGER(v);
 
-    if ((v = yajl_tree_get(node, atime, yajl_t_number)))
-        dir->stat.atime = YAJL_GET_INTEGER(v);
+    if ((v = yajl_tree_get(node, mtime, yajl_t_number)))
+        dir->stat.mtime = YAJL_GET_INTEGER(v);
 
     if ((v = yajl_tree_get(node, length, yajl_t_number)))
         dir->stat.length = YAJL_GET_INTEGER(v);
@@ -101,7 +101,7 @@ const webhdfs_fstat_t *webhdfs_dir_read (webhdfs_dir_t *dir) {
     if ((v = yajl_tree_get(node, replication, yajl_t_number)))
         dir->stat.replication = YAJL_GET_INTEGER(v);
 
-    if ((v = yajl_tree_get(node, permission, yajl_t_number)))
+    if ((v = yajl_tree_get(node, permission, yajl_t_string)))
         dir->stat.permission = strtol(YAJL_GET_STRING(v), NULL, 8);
 
     if ((v = yajl_tree_get(node, path, yajl_t_string)))

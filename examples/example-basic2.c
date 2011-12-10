@@ -10,6 +10,15 @@ static void __read_dir (webhdfs_t *fs, const char *path) {
 
     while ((stat = webhdfs_dir_read(dir)) != NULL) {
         printf("%s\n", stat->path);
+        printf(" - group:  %s\n", stat->group);
+        printf(" - owner:  %s\n", stat->owner);
+        printf(" - type:   %s\n", stat->type);
+        printf(" - length: %lu\n", stat->length);
+        printf(" - block:  %lu\n", stat->block);
+        printf(" - atime:  %lu\n", stat->atime);
+        printf(" - mtime:  %lu\n", stat->mtime);
+        printf(" - replication: %d\n", stat->replication);
+        printf(" - permission:  %o\n", stat->permission);
     }
 
     webhdfs_dir_close(dir);
