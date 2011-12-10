@@ -58,7 +58,7 @@ int webhdfs_req_open (webhdfs_req_t *req,
 
     /* Fill URL */
     buffer_clear(&(req->buffer));
-    r = buffer_append_format(&(req->buffer), "%s://%s:%d/%s?",
+    r = buffer_append_format(&(req->buffer), "%s://%s:%d/webhdfs/v1/%s?",
                              conf->use_ssl ? "https" : "http",
                              conf->host, conf->port,
                              (path != NULL) ? path + 1 : "");
