@@ -236,16 +236,3 @@ char *webhdfs_home_dir (webhdfs_t *fs) {
     return(NULL);
 }
 
-int webhdfs_bad (webhdfs_t *fs) {
-    webhdfs_req_t req;
-
-    webhdfs_req_open(&req, fs, NULL);
-    webhdfs_req_set_args(&req, "op=BAD");
-    webhdfs_req_exec(&req, WEBHDFS_REQ_GET);
-    printf("TODO: bad: %s\n", req.buffer.blob);
-    webhdfs_req_close(&req);
-
-    return(0);
-}
-
-

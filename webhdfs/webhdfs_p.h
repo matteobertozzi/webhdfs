@@ -42,8 +42,10 @@ struct webhdfs_conf {
 };
 
 struct webhdfs_req {
-    buffer_t buffer;        /* Internal buffer used for url & data */
-    int      rcode;         /* Response code */
+    webhdfs_upload_t upload;    /* Upload function used by put */
+    void *   upload_data;       /* Upload user data */
+    buffer_t buffer;            /* Internal buffer used for url & data */
+    int      rcode;             /* Response code */
 };
 
 enum webhdfs_req_type {
@@ -62,7 +64,8 @@ struct webhdfs_dir {
 
 struct webhdfs_file {
     webhdfs_t *fs;
-    char *path;
+    char *     path;
+    size_t     offset;
 };
 
 int      webhdfs_req_open                 (webhdfs_req_t *req,
@@ -73,6 +76,9 @@ void     webhdfs_req_free                 (webhdfs_req_t *req);
 int      webhdfs_req_set_args             (webhdfs_req_t *req,
                                            const char *frmt,
                                            ...);
+int      webhdfs_req_set_upload           (webhdfs_req_t *req,
+                                           webhdfs_upload_t func,
+                                           void *user_data);
 int      webhdfs_req_exec                 (webhdfs_req_t *req,
                                            int type);
 

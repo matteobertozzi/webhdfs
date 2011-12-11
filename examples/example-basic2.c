@@ -31,11 +31,11 @@ static void __read_file (webhdfs_t *fs, const char *path) {
 
     file = webhdfs_file_open(fs, path);
 
-    n = webhdfs_file_read(file, buffer, sizeof(buffer), 10);
+    n = webhdfs_file_pread(file, buffer, sizeof(buffer) - 1, 10);
     buffer[n] = '\0';
     printf("READ 0: %s (%lu)\n", buffer, n);
 
-    n = webhdfs_file_read(file, buffer, sizeof(buffer), 0);
+    n = webhdfs_file_pread(file, buffer, sizeof(buffer) - 1, 0);
     printf("READ 1: %s (%lu)\n", buffer, n);
 
     webhdfs_file_close(file);

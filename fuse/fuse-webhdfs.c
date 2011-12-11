@@ -22,11 +22,14 @@
 
 #include <webhdfs/webhdfs.h>
 
+#include <sys/types.h>
 #include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <pwd.h>
+#include <grp.h>
 
 struct webhdfs_fuse {
     webhdfs_t *webhdfs;
@@ -34,6 +37,36 @@ struct webhdfs_fuse {
 };
 
 static struct webhdfs_fuse __webhdfs_fuse;
+
+/* ============================================================================
+ *  user/group utils
+ */
+#define GROUP_SIZE_MAX      (1024)      /* sysconf(_SC_GETGR_R_SIZE_MAX) */
+#define USER_SIZE_MAX       (1024)      /* sysconf(_SC_GETPW_R_SIZE_MAX) */
+
+int hdfs_user_uid (const char *name, uid_t *uid) {
+    char buffer[GROUP_SIZE_MAX];
+    struct passwd *tmp;
+    struct passwd pwd;
+
+    if (getpwnam_r(name, &pwd, buffer, USER_SIZE_MAX, &tmp))
+        return(1);
+
+    *uid = pwd.pw_uid;
+    return(0);
+}
+
+int hdfs_group_gid (const char *name, gid_t *gid) {
+    char buffer[GROUP_SIZE_MAX];
+    struct group *tmp;
+    struct group grp;
+
+    if (getgrnam_r(name, &grp, buffer, GROUP_SIZE_MAX, &tmp))
+        return(1);
+
+    *gid = grp.gr_gid;
+    return(0);
+}
 
 /* ============================================================================
  *  webhdfs Fuse

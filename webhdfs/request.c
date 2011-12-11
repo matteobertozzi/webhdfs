@@ -44,7 +44,11 @@ static size_t __webhdfs_req_read (void *ptr,
                                   size_t nitems,
                                   void *stream)
 {
-    return(0);
+    webhdfs_req_t *req = (webhdfs_req_t *)stream;
+    if (req->upload == NULL)
+        return(0);
+
+    return(req->upload(ptr, size * nitems, req->upload_data));
 }
 
 int webhdfs_req_open (webhdfs_req_t *req,
@@ -55,6 +59,10 @@ int webhdfs_req_open (webhdfs_req_t *req,
     int r;
 
     buffer_open(&(req->buffer));
+
+    /* No upload by default */
+    req->upload_data = NULL;
+    req->upload = NULL;
 
     /* Fill URL */
     buffer_clear(&(req->buffer));
@@ -90,7 +98,17 @@ int webhdfs_req_set_args (webhdfs_req_t *req,
     return(r);
 }
 
+int webhdfs_req_set_upload (webhdfs_req_t *req,
+                            webhdfs_upload_t func,
+                            void *user_data)
+{
+    req->upload_data = user_data;
+    req->upload = func;
+    return(0);
+}
+
 int webhdfs_req_exec (webhdfs_req_t *req, int type) {
+    struct curl_slist *headers = NULL;
     CURLcode err;
     CURL *curl;
 
@@ -98,8 +116,10 @@ int webhdfs_req_exec (webhdfs_req_t *req, int type) {
         return(1);
 
     curl_easy_setopt(curl, CURLOPT_URL, req->buffer.blob);
+    buffer_clear(&(req->buffer));
+
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, req->upload == NULL);
 
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __webhdfs_req_write);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
@@ -109,23 +129,49 @@ int webhdfs_req_exec (webhdfs_req_t *req, int type) {
         curl_easy_setopt(curl, CURLOPT_HTTPGET, 1);
         break;
       case WEBHDFS_REQ_PUT:
-        curl_easy_setopt(curl, CURLOPT_PUT, 1);
-        curl_easy_setopt(curl, CURLOPT_UPLOAD, 1);     /* TODO */
-        curl_easy_setopt(curl, CURLOPT_READFUNCTION, __webhdfs_req_read);
-        curl_easy_setopt(curl, CURLOPT_READDATA, req);
-        curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, 0);
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
         break;
       case WEBHDFS_REQ_POST:
-        curl_easy_setopt(curl, CURLOPT_POST, 1);
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
         break;
       case WEBHDFS_REQ_DELETE:
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         break;
     }
 
+    /* Upload Require two steps */
+    if (req->upload != NULL) {
+        char *url;
+
+        if ((err = curl_easy_perform(curl)))
+            fprintf(stderr, "%s\n", curl_easy_strerror(err));
+
+        curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &url);
+
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+
+        headers = curl_slist_append(headers, "Transfer-Encoding: chunked");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+        curl_easy_setopt(curl, CURLOPT_READFUNCTION, __webhdfs_req_read);
+        curl_easy_setopt(curl, CURLOPT_READDATA, req);
+
+        switch (type) {
+          case WEBHDFS_REQ_PUT:
+            curl_easy_setopt(curl, CURLOPT_PUT, 1);
+            break;
+          case WEBHDFS_REQ_POST:
+            curl_easy_setopt(curl, CURLOPT_POST, 1);
+            break;
+        }
+    }
+
     buffer_clear(&(req->buffer));
     if ((err = curl_easy_perform(curl)))
         fprintf(stderr, "%s\n", curl_easy_strerror(err));
+
+    if (headers != NULL)
+        curl_slist_free_all(headers);
 
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &(req->rcode));
     curl_easy_cleanup(curl);

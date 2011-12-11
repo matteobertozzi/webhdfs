@@ -6,3 +6,11 @@ target_link_libraries(example-basic webhdfs)
 
 add_executable(example-basic2 example-basic2.c)
 target_link_libraries(example-basic2 webhdfs)
+
+add_executable(example-read example-read.c)
+target_link_libraries(example-read webhdfs)
+
+add_executable(example-write example-write.c)
+target_link_libraries(example-write webhdfs)
+
+

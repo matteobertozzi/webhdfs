@@ -12,7 +12,6 @@ int main (int argc, char **argv) {
     /* Connect to WebHDFS */
     fs = webhdfs_connect(conf);
 
-    webhdfs_bad(fs);
     webhdfs_mkdir(fs, "/test", 0644);
 
     /* Disconnect from WebHDFS */
