@@ -75,7 +75,7 @@ const webhdfs_fstat_t *webhdfs_dir_read (webhdfs_dir_t *dir) {
     const char *owner[] = {"owner", NULL};
     const char *type[] = {"type", NULL};
     const char *mtime[] = {"modificationTime", NULL};
-    const char *block[] = {"block", NULL};
+    const char *block[] = {"blockSize", NULL};
     const char *atime[] = {"accessTime", NULL};
     webhdfs_fstat_t stat;
     yajl_val node, v;

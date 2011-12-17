@@ -37,7 +37,6 @@ static size_t __append_buffer_upload (void *ptr, size_t length, void *data) {
     if (abuf->nbytes < length)
         length = abuf->nbytes;
 
-    printf("APPEND BUFFER UPLOAD %lu\n", length);
     if (length > 0) {
         memcpy(ptr, abuf->buffer + abuf->offset, length);
         abuf->offset += length;

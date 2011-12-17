@@ -36,10 +36,10 @@ typedef size_t (*webhdfs_upload_t)  (void *ptr,
                                      void *user_data);
 
 typedef struct webhdfs_fstat {
-    const char *group;
-    const char *owner;
-    const char *path;
-    const char *type;
+    char *group;
+    char *owner;
+    char *path;
+    char *type;
     size_t length;
     size_t block;
     size_t atime;
@@ -90,12 +90,14 @@ int                    webhdfs_file_seek          (webhdfs_file_t *fs,
                                                    size_t offset);
 void                   webhdfs_file_close         (webhdfs_file_t *file);
 
-
 webhdfs_dir_t *        webhdfs_dir_open           (webhdfs_t *fs,
                                                    const char *path);
 const webhdfs_fstat_t *webhdfs_dir_read           (webhdfs_dir_t *dir);
 void                   webhdfs_dir_close          (webhdfs_dir_t *dir);
 
+webhdfs_fstat_t *      webhdfs_stat               (webhdfs_t *fs,
+                                                   const char *path);
+void                   webhdfs_fstat_free         (webhdfs_fstat_t *fstat);
 
 int                    webhdfs_mkdir              (webhdfs_t *fs,
                                                    const char *path,

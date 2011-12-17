@@ -25,6 +25,8 @@
 #include "webhdfs_p.h"
 #include "webhdfs.h"
 
+#define __strdup(x)         ((x != NULL && strlen(x) > 0) ? strdup(x) : NULL)
+
 webhdfs_t *webhdfs_connect (const webhdfs_conf_t *conf) {
     webhdfs_t *fs;
 
@@ -39,6 +41,91 @@ webhdfs_t *webhdfs_connect (const webhdfs_conf_t *conf) {
 void webhdfs_disconnect (webhdfs_t *fs) {
     free(fs);
 }
+
+webhdfs_fstat_t *webhdfs_stat (webhdfs_t *fs, const char *path) {
+    const char *pathSuffix[] = {"pathSuffix", NULL};
+    const char *replication[] = {"replication", NULL};
+    const char *permission[] = {"permission", NULL};
+    const char *length[] = {"length", NULL};
+    const char *group[] = {"group", NULL};
+    const char *owner[] = {"owner", NULL};
+    const char *type[] = {"type", NULL};
+    const char *mtime[] = {"modificationTime", NULL};
+    const char *block[] = {"blockSize", NULL};
+    const char *atime[] = {"accessTime", NULL};
+    yajl_val root, node, v;
+    webhdfs_fstat_t *stat;
+    webhdfs_req_t req;
+
+    webhdfs_req_open(&req, fs, path);
+    webhdfs_req_set_args(&req, "op=GETFILESTATUS");
+    webhdfs_req_exec(&req, WEBHDFS_REQ_GET);
+    root = webhdfs_req_json_response(&req);
+    webhdfs_req_close(&req);
+
+    if ((v = webhdfs_response_exception(root)) != NULL) {
+        yajl_tree_free(root);
+        return(NULL);
+    }
+
+    if ((node = webhdfs_response_file_status(root)) == NULL) {
+        yajl_tree_free(root);
+        return(NULL);
+    }
+
+    if ((stat = (webhdfs_fstat_t *) malloc(sizeof(webhdfs_fstat_t))) == NULL) {
+        yajl_tree_free(root);
+        return(NULL);
+    }
+
+    memset(stat, 0, sizeof(webhdfs_fstat_t));
+
+    if ((v = yajl_tree_get(node, atime, yajl_t_number)))
+        stat->atime = YAJL_GET_INTEGER(v);
+
+    if ((v = yajl_tree_get(node, mtime, yajl_t_number)))
+        stat->mtime = YAJL_GET_INTEGER(v);
+
+    if ((v = yajl_tree_get(node, length, yajl_t_number)))
+        stat->length = YAJL_GET_INTEGER(v);
+
+    if ((v = yajl_tree_get(node, block, yajl_t_number)))
+        stat->block = YAJL_GET_INTEGER(v);
+
+    if ((v = yajl_tree_get(node, replication, yajl_t_number)))
+        stat->replication = YAJL_GET_INTEGER(v);
+
+    if ((v = yajl_tree_get(node, permission, yajl_t_string)))
+        stat->permission = strtol(YAJL_GET_STRING(v), NULL, 8);
+
+    if ((v = yajl_tree_get(node, pathSuffix, yajl_t_string)))
+        stat->path = __strdup(YAJL_GET_STRING(v));
+
+    if ((v = yajl_tree_get(node, group, yajl_t_string)))
+        stat->group = __strdup(YAJL_GET_STRING(v));
+
+    if ((v = yajl_tree_get(node, owner, yajl_t_string)))
+        stat->owner = __strdup(YAJL_GET_STRING(v));
+
+    if ((v = yajl_tree_get(node, type, yajl_t_string)))
+        stat->type = __strdup(YAJL_GET_STRING(v));
+
+    yajl_tree_free(root);
+    return(stat);
+}
+
+void webhdfs_fstat_free (webhdfs_fstat_t *stat) {
+    if (stat->owner != NULL)
+        free(stat->owner);
+    if (stat->group != NULL)
+        free(stat->group);
+    if (stat->type != NULL)
+        free(stat->type);
+    if (stat->path != NULL)
+        free(stat->path);
+    free(stat);
+}
+
 
 static int __webhdfs_delete (webhdfs_t *fs, const char *path, int recursive) {
     webhdfs_req_t req;
